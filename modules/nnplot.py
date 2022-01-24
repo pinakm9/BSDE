@@ -27,10 +27,28 @@ def nn_sol(nn_sol, space, t, x_lim, y_lim, file_path, fig_size=(8, 8), fps=24, n
     animation.save(file_path)
 
 
+
+class Domain:
+    """
+    Description:
+        A class for implementing box domains
+    Attrs:
+        low: an array of floats specifying min in each dimension
+        high: an array of floats specifying max in each dimension
+    """
+    def __init__(self, low, high):
+        self.low = low 
+        self.high = high
+        self.dim = len(low)
+
+    def sample(self, num_sample):
+        return tf.random.uniform(shape=(num_sample, self.dim), minval=self.low, maxval=self.high)
+
+
 class NNPlotter:
-    def __init__(self, funcs, num_pts_per_dim=15):
+    def __init__(self, funcs, low, high, num_pts_per_dim=15):
         self.funcs = funcs
-        self.domain = funcs[0].domain
+        self.domain = Domain(low, high)
         self.num_pts_per_dim = num_pts_per_dim
         self.coord_data = [tf.reshape(tf.linspace(low, self.domain.high[i], num=num_pts_per_dim), shape=(-1, 1)) for i, low in enumerate(self.domain.low)]
 
