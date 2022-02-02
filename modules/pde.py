@@ -47,7 +47,7 @@ class SemilinearPDE:
             os.makedirs(self.folder)
 
     @ut.timer
-    def evolve(self, X0=500, n_repeats=1000, time_steps=20, invert_mu=False, save=True, animate=True):
+    def evolve(self, X0=500, n_repeats=1000, time_steps=20, invert_mu=False, save=True, animate=False, prune=None):
         self.dt = (self.t1 - self.t0) / time_steps
         self.sqrt_dt = np.sqrt(self.dt)
         self.N = time_steps
@@ -76,17 +76,22 @@ class SemilinearPDE:
             t = list(t) * n_particles
             t = np.array(t).reshape((-1, 1))
             spacetime = np.concatenate([t, np.repeat(X0, [self.N+1]*n_particles, axis=0)], axis=1)
+            values = Y.numpy().reshape((-1, 1))
+            if prune is not None:
+                idx, _ = np.where(values>prune)
+                spacetime = np.delete(spacetime, idx, axis=0)
+                values = np.delete(values, idx, axis=0)
 
             pd.DataFrame(spacetime)\
                 .to_csv(self.folder + '/spacetime_sample_{}_rep_{}.csv'.format(n_particles, n_repeats), index=None, header=None, sep=',')
-            pd.DataFrame(Y.numpy().flatten())\
+            pd.DataFrame(values)\
                 .to_csv(self.folder + '/values_sample_{}_rep_{}.csv'.format(n_particles, n_repeats), index=None, header=None, sep=',')
             print('generated values for {} spacetime points'.format(spacetime.shape[0]))
 
         if animate:
             self.animate(X)
         # Return simulated paths as well as increments of Brownian motion
-        return X, Y, dW
+        return X, Y, dW, values
 
  
     
