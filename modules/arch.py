@@ -4,7 +4,7 @@ import tensorflow as tf
 
 
 class LSTMForgetBlock(tf.keras.layers.Layer):
-    def __init__(self, num_nodes, dtype=tf.float64):
+    def __init__(self, num_nodes, dtype=tf.float32):
         super().__init__(name='LSTMForgetBlock', dtype=dtype)
         self.W_f = tf.keras.layers.Dense(num_nodes, dtype=dtype, name='W_f', use_bias=False)
         self.U_f = tf.keras.layers.Dense(num_nodes, dtype=dtype, name='U_f')
@@ -25,7 +25,7 @@ class LSTMForgetBlock(tf.keras.layers.Layer):
 
 
 class LSTMPeepholeBlock(tf.keras.layers.Layer):
-    def __init__(self, num_nodes, dtype=tf.float64):
+    def __init__(self, num_nodes, dtype=tf.float32):
         super().__init__(name='LSTMPeepholeBlock', dtype=dtype)
         self.W_f = tf.keras.layers.Dense(num_nodes, dtype=dtype, name='W_f', use_bias=False)
         self.U_f = tf.keras.layers.Dense(num_nodes, dtype=dtype, name='U_f')
@@ -43,7 +43,7 @@ class LSTMPeepholeBlock(tf.keras.layers.Layer):
         return o*c, c
 
 class DGMBlock(tf.keras.layers.Layer):
-    def __init__(self, num_nodes, dtype=tf.float64):
+    def __init__(self, num_nodes, dtype=tf.float32):
         super().__init__(name='DGMBlock', dtype=dtype)
         self.W_z = tf.keras.layers.Dense(num_nodes, dtype=dtype, name='W_f', use_bias=False)
         self.U_z = tf.keras.layers.Dense(num_nodes, dtype=dtype, name='U_f')
@@ -73,8 +73,8 @@ class FPForget(tf.keras.models.Model):
         super().__init__(name=name, dtype=tf.float32)
         self.num_nodes = num_nodes
         self.num_layers = num_layers
-        self.lstm_layers = [LSTMForgetBlock(num_nodes, dtype=dtype) for _ in range(num_layers)]
-        self.final_dense = tf.keras.layers.Dense(units=1, activation=tf.keras.activations.exponential, dtype=dtype)
+        self.lstm_layers = [LSTMForgetBlock(num_nodes, dtype=self.dtype) for _ in range(num_layers)]
+        self.final_dense = tf.keras.layers.Dense(units=1, activation=tf.keras.activations.exponential, dtype=self.dtype)
         #self.batch_norm = tf.keras.layers.BatchNormalization(axis=1)
         
         
@@ -103,8 +103,8 @@ class FPPeephole(tf.keras.models.Model):
         super().__init__(name=name, dtype=tf.float32)
         self.num_nodes = num_nodes
         self.num_layers = num_layers
-        self.lstm_layers = [LSTMPeepholeBlock(num_nodes, dtype=dtype) for _ in range(num_layers)]
-        self.final_dense = tf.keras.layers.Dense(units=1, activation=tf.keras.activations.exponential, dtype=dtype)
+        self.lstm_layers = [LSTMPeepholeBlock(num_nodes, dtype=self.dtype) for _ in range(num_layers)]
+        self.final_dense = tf.keras.layers.Dense(units=1, activation=tf.keras.activations.exponential, dtype=self.dtype)
         #self.batch_norm = tf.keras.layers.BatchNormalization(axis=1)
         
         
@@ -132,9 +132,9 @@ class FPDGM(tf.keras.models.Model):
         super().__init__(name=name, dtype=tf.float32)
         self.num_nodes = num_nodes
         self.num_layers = num_layers
-        self.initial_dense = tf.keras.layers.Dense(units=num_nodes, activation=tf.keras.activations.tanh, dtype=dtype)
-        self.lstm_layers = [DGMBlock(num_nodes, dtype=dtype) for _ in range(num_layers)]
-        self.final_dense = tf.keras.layers.Dense(units=1, activation=tf.keras.activations.exponential, dtype=dtype)
+        self.initial_dense = tf.keras.layers.Dense(units=num_nodes, activation=tf.keras.activations.tanh, dtype=self.dtype)
+        self.lstm_layers = [DGMBlock(num_nodes, dtype=self.dtype) for _ in range(num_layers)]
+        self.final_dense = tf.keras.layers.Dense(units=1, activation=tf.keras.activations.exponential, dtype=self.dtype)
         #self.batch_norm = tf.keras.layers.BatchNormalization(axis=1)
          
 
@@ -159,9 +159,9 @@ class FPVanilla(tf.keras.models.Model):
         super().__init__(name=name, dtype=tf.float32)
         self.num_nodes = num_nodes
         self.num_layers = num_layers
-        self.initial_dense = tf.keras.layers.Dense(units=num_nodes, activation=tf.keras.activations.tanh, dtype=dtype)
-        self.middle_layers = [tf.keras.layers.Dense(units=num_nodes, activation=tf.keras.activations.tanh, dtype=dtype) for _ in range(num_layers)]
-        self.final_dense = tf.keras.layers.Dense(units=1, activation=tf.keras.activations.exponential, dtype=dtype)
+        self.initial_dense = tf.keras.layers.Dense(units=num_nodes, activation=tf.keras.activations.tanh, dtype=self.dtype)
+        self.middle_layers = [tf.keras.layers.Dense(units=num_nodes, activation=tf.keras.activations.tanh, dtype=self.dtype) for _ in range(num_layers)]
+        self.final_dense = tf.keras.layers.Dense(units=1, activation=tf.keras.activations.exponential, dtype=self.dtype)
         #self.batch_norm = tf.keras.layers.BatchNormalization(axis=1)
          
 
