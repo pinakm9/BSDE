@@ -9,7 +9,7 @@ import tensorflow as tf
 import numpy as np 
 from circle_bw import CircleBackward2D
 
-sigma = np.sqrt(2.0)
+sigma = np.sqrt(20.0)
 two_pi = 2. * np.pi
 def p0(x):
     return tf.exp(-0.5*tf.reduce_sum(tf.square(x), axis=-1, keepdims=True)) / two_pi
