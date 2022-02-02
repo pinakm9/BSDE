@@ -70,7 +70,7 @@ class FPForget(tf.keras.models.Model):
         num_layers: number of LSTM layers
     """
     def __init__(self, num_nodes, num_layers, name = 'FPForget', save_path=None):
-        super().__init__(name=name, dtype='float32')
+        super().__init__(name=name, dtype=tf.float32)
         self.num_nodes = num_nodes
         self.num_layers = num_layers
         self.lstm_layers = [LSTMForgetBlock(num_nodes, dtype=dtype) for _ in range(num_layers)]
@@ -100,7 +100,7 @@ class FPPeephole(tf.keras.models.Model):
         num_layers: number of LSTM layers
     """
     def __init__(self, num_nodes, num_layers, name = 'FPPeephole', save_path=None):
-        super().__init__(name=name, dtype='float32')
+        super().__init__(name=name, dtype=tf.float32)
         self.num_nodes = num_nodes
         self.num_layers = num_layers
         self.lstm_layers = [LSTMPeepholeBlock(num_nodes, dtype=dtype) for _ in range(num_layers)]
@@ -129,7 +129,7 @@ class FPDGM(tf.keras.models.Model):
         num_layers: number of DGM layers
     """
     def __init__(self, num_nodes, num_layers, name = 'FPDGM', save_path=None):
-        super().__init__(name=name, dtype='float32')
+        super().__init__(name=name, dtype=tf.float32)
         self.num_nodes = num_nodes
         self.num_layers = num_layers
         self.initial_dense = tf.keras.layers.Dense(units=num_nodes, activation=tf.keras.activations.tanh, dtype=dtype)
@@ -156,7 +156,7 @@ class FPVanilla(tf.keras.models.Model):
         num_layers: number of Vanilla layers
     """
     def __init__(self, num_nodes, num_layers, name = 'FPVanilla', save_path=None):
-        super().__init__(name=name, dtype='float32')
+        super().__init__(name=name, dtype=tf.float32)
         self.num_nodes = num_nodes
         self.num_layers = num_layers
         self.initial_dense = tf.keras.layers.Dense(units=num_nodes, activation=tf.keras.activations.tanh, dtype=dtype)
