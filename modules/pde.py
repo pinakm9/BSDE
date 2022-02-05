@@ -114,7 +114,7 @@ class SemilinearPDE:
         idx = [i*self.n_repeats for i in range(self.n_particles)]
         def animator(j):
             ax.clear()
-            ax.scatter(np.take(X[:, j, 0], idx), np.take(X[:, j, 1], idx))
+            ax.scatter(np.take(X[j, :, 0], idx), np.take(X[j, :, 1], idx))
             ax.set_title('time = {:.3f}'.format(j*self.dt))
 
         animation = FuncAnimation(fig=fig, func=animator, frames = self.N + 1, interval=50, repeat=False)

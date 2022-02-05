@@ -32,7 +32,7 @@ class CircleBackward2D(pde.SemilinearPDE):
             resolution = int(X0.split('_')[-1])
             X0 = self.domain.grid_sample_2d(resolution=resolution, indices=[0, 1])
 
-        spacetime, values = super().evolve(X0=X0, n_repeats=n_repeats, time_steps=time_steps, invert_mu=False,\
+        spacetime, values = super().evolve(X0=X0, n_repeats=n_repeats, time_steps=time_steps, invert_mu=invert_mu,\
                                          save=False, animate=animate, prune=None, interpolate=False)
         values = (self.p_inf(spacetime) * values).numpy()
         if prune is not None:
