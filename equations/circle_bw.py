@@ -10,16 +10,17 @@ import numpy as np
 from scipy.special import erf
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy.special import gamma
 
 class CircleBackward2D(pde.SemilinearPDE):
     def __init__(self, p0, sigma=np.sqrt(0.1), t1=1., low=[-1., -1.], high=[1., 1.], name='CircleBackward2D', folder='.', dtype='floaat32'):
         self.D = sigma**2 / 2.
-        self.Z = np.sqrt(np.pi**3 * self.D) * (1. + erf(1./np.sqrt(self.D)))
+        self.Z = np.sqrt(np.pi**3 * self.D) * (1. + erf(1./np.sqrt(self.D))) / 2.0
         #log_Z = np.log(self.Z) 
         #log_2_pi = np.log(2.*np.pi)
 
         V = lambda x: tf.square((tf.reduce_sum(tf.square(x), axis=-1, keepdims=True) - 1.))
-        mu = lambda x: -4. * x * (tf.reduce_sum(tf.square(x), axis=-1, keepdims=True) - 1.)
+        mu = lambda x: -4. * x * (tf.reduce_sum(tf.square(x), axis=-1, keepdims=True) - 1.) .numpy()
         self.p_inf = lambda x: tf.exp(-V(x)/self.D) / self.Z
         g = lambda x: p0(x) / self.p_inf(x)
         f = lambda x: 0.
@@ -28,10 +29,6 @@ class CircleBackward2D(pde.SemilinearPDE):
 
 
     def collect_data(self, X0='grid_20', n_repeats=1000, time_steps=20, invert_mu=False, save=True, animate=False, prune=None, interpolate=False):
-        if isinstance(X0, str):
-            resolution = int(X0.split('_')[-1])
-            X0 = self.domain.grid_sample_2d(resolution=resolution, indices=[0, 1])
-
         spacetime, values = super().evolve(X0=X0, n_repeats=n_repeats, time_steps=time_steps, invert_mu=invert_mu,\
                                          save=False, animate=animate, prune=None, interpolate=False)
         values = (self.p_inf(spacetime) * values).numpy()
@@ -50,25 +47,30 @@ class CircleBackward2D(pde.SemilinearPDE):
         return spacetime, values
 
 
-    def plot_slice(self, slice, indices=[0, 1], steady=True):
-        spacetime, values = self.get_time_slice(slice)
+    def plot_slice(self, t, indices=[0, 1], steady=True):
+        spacetime, values = self.get_time_slice(t)
         #values = self.interpolate_outliers(values)
         X = spacetime[:, indices[0] + 1]
         Y = spacetime[:, indices[1] + 1]
-        if steady:
-         Z_inf = self.p_inf(np.hstack([X.reshape((-1, 1)), Y.reshape((-1, 1))])).numpy()
+        Z_inf = self.p_inf(np.hstack([X.reshape((-1, 1)), Y.reshape((-1, 1))])).numpy().reshape((-1,))
+         #print(Z_inf, values)
         grid = len(np.unique(X)), len(np.unique(Y))
         print(grid)
 
         X = X.reshape(grid)
         Y = Y.reshape(grid)
-        Z = values.reshape(grid)
+        c = ((np.exp(1) * 2.* gamma(7./6)) / self.Z)
+        Z = (super().interpolate_outliers((values * Z_inf )) ).reshape(grid) 
         if steady:
             Z_inf = Z_inf.reshape(grid)
+
         fig = plt.figure(figsize=(8, 8))
         ax = fig.add_subplot(111, projection='3d')
-        ax.plot_surface(X, Y, Z, cmap='viridis')
+        ax.plot_wireframe(X, Y, Z, color='orange')
+        print(Z)
         if steady:
             ax.plot_wireframe(X, Y, Z_inf, color='deeppink')
-        ax.set_title('time = {:.4f}s'.format(slice * self.dt))
-        plt.savefig(self.folder + '/slice_{}.png'.format(slice))
+            
+        ax.set_title('time = {:.4f}s'.format(t * self.dt if isinstance(t, int) else t))
+        plt.savefig(self.folder + '/slice{}.png'.format(self.time_tag(t)))
+        print(c, 1/c, self.D, self.Z, self.Z/(2*np.exp(1)*gamma(7/6)), (2*np.exp(1)*gamma(7/6)))

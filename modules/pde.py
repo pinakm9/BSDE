@@ -60,6 +60,9 @@ class SemilinearPDE:
         self.N = time_steps
         if isinstance(X0, int):
             X0 = self.domain.sample(X0).numpy()
+        elif isinstance(X0, str):
+            resolution = int(X0.split('_')[-1])
+            X0 = self.domain.grid_sample_2d(resolution=resolution, indices=[0, 1])
         n_particles = X0.shape[0]
         self.n_particles = n_particles 
         self.n_repeats = n_repeats
@@ -122,19 +125,26 @@ class SemilinearPDE:
         #plt.show()
 
         
-    def read_data(self):
-        spacetime = np.genfromtxt(self.folder + '/spacetime.csv', delimiter=',', dtype=self.dtype)
-        values = np.genfromtxt(self.folder + '/values.csv', delimiter=',', dtype=self.dtype)
+    def read_data(self, t=None):
+        if t is None:
+            spacetime = np.genfromtxt(self.folder + '/spacetime.csv', delimiter=',', dtype=self.dtype)
+            values = np.genfromtxt(self.folder + '/values.csv', delimiter=',', dtype=self.dtype)
+        else:
+            spacetime = np.genfromtxt(self.folder + '/spacetime{}.csv'.format(self.time_tag(t)), delimiter=',', dtype=self.dtype)
+            values = np.genfromtxt(self.folder + '/values{}.csv'.format(self.time_tag(t)), delimiter=',', dtype=self.dtype)
         return spacetime, values
 
-    def get_time_slice(self, slice):
-        spacetime, values = self.read_data()
-        a = self.n_particles * slice
-        b = a + self.n_particles
-        return spacetime[a:b, :], values[a:b]
+    def get_time_slice(self, t):
+        if isinstance(t, int):
+            spacetime, values = self.read_data()
+            a = self.n_particles * slice
+            b = a + self.n_particles
+            return spacetime[a:b, :], values[a:b]
+        else:
+            return self.read_data(t)
 
-    def plot_slice(self, slice, indices=[0, 1]):
-        spacetime, values = self.get_time_slice(slice)
+    def plot_slice(self, t, indices=[0, 1]):
+        spacetime, values = self.get_time_slice(t)
         #values = self.interpolate_outliers(values)
         X = spacetime[:, indices[0] + 1]
         Y = spacetime[:, indices[1] + 1]
@@ -149,8 +159,8 @@ class SemilinearPDE:
         fig = plt.figure(figsize=(8, 8))
         ax = fig.add_subplot(111, projection='3d')
         ax.plot_surface(X, Y, Z, cmap='viridis')
-        ax.set_title('time = {:.4f}s'.format(slice * self.dt))
-        plt.savefig(self.folder + '/slice_{}.png'.format(slice))
+        ax.set_title('time = {:.4f}s'.format(t * self.dt if isinstance(t, int) else t))
+        plt.savefig(self.folder + '/slice{}.png'.format(self.time_tag(t)))
 
     def interpolate_outliers(self, values):
         y = values.reshape((-1,))
@@ -162,6 +172,69 @@ class SemilinearPDE:
             else:
                 y[i] = y[1]
         return y.reshape((-1, 1))
+
+
+    @ut.timer
+    def evol(self, X0=500, n_repeats=1000, final_time=1.0, time_steps=20, invert_mu=False, save=True, prune=None, interpolate=False):
+        self.dt = (final_time - self.t0) / time_steps
+        self.sqrt_dt = np.sqrt(self.dt)
+        self.N = time_steps
+        if isinstance(X0, int):
+            X0 = self.domain.sample(X0).numpy()
+        elif isinstance(X0, str):
+            resolution = int(X0.split('_')[-1])
+            X0 = self.domain.grid_sample_2d(resolution=resolution, indices=[0, 1])
+        n_particles = X0.shape[0]
+        self.n_particles = n_particles 
+        self.n_repeats = n_repeats
+        # Initialize the array X
+        X = np.repeat(X0, [n_repeats]*n_particles, axis=0)
+        t = np.ones((X0.shape[0], 1)) * final_time
+        spacetime = np.hstack([t, X0])
+
+        # fix sign of mu 
+        if invert_mu:
+            s = -1.
+        else:
+            s = 1.
+        # evolve in time
+        for i in range(self.N):
+            # This corresponds to the Euler-Maruyama Scheme
+            dW = np.random.normal(loc=0.0, scale=self.sqrt_dt, size=(n_particles * n_repeats, self.dim)).astype(self.dtype)
+            X = X + s * self.mu(X) * self.dt + self.sigma * dW
+    
+        values = tf.reduce_mean(self.g(tf.reshape(X, (n_particles, n_repeats, self.dim))), axis=1)
+        values = tf.squeeze(values).numpy().reshape((-1, 1))
+        print(values)
+        
+        if prune is not None:
+            idx = np.argwhere(values>prune)
+            spacetime = np.delete(spacetime, idx, axis=0)
+            values = np.delete(values, idx, axis=0)
+        
+        if interpolate:
+            values = self.interpolate_outliers(values)
+
+        if save:
+            pd.DataFrame(spacetime)\
+                .to_csv(self.folder + '/spacetime{}.csv'.format(self.time_tag(final_time)), index=None, header=None, sep=',')
+            pd.DataFrame(values)\
+                .to_csv(self.folder + '/values{}.csv'.format(self.time_tag(final_time)), index=None, header=None, sep=',')
+            print('generated values for {} spacetime points'.format(spacetime.shape[0]))
+            fig = plt.figure(figsize=(8, 8))
+            ax = fig.add_subplot(111)
+            ax.scatter(X[:, 0], X[:, 1])
+            ax.set_title('time = {:.2f}'.format(final_time))
+            plt.savefig(self.folder + '/final_time{}.png'.format(self.time_tag(final_time)))
+        return spacetime, values
+
+
+    def time_tag(self, t):
+        if isinstance(t, int):
+            return '_slice_' + str(slice)
+        else:
+            return '_time_{:.6f}'.format(t).replace('.', '_')
+
             
 
 
