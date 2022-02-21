@@ -25,7 +25,7 @@ high = 2. * np.ones(2)
 low = -high
 tag = '{:.2f}'.format(sigma**2).replace('.', '_')
 name = 'CircleBackward2D_sigma2_{}'.format(tag)
-eqn = CircleBackward2D(p0=p1, sigma=sigma, t1=.5, low=low, high=high, folder='.', name=name, dtype='float64')
-t = 0.2
-s, values = eqn.evol(X0='grid_30', n_repeats=1000, final_time=t, time_steps=100, prune=None, interpolate=True, invert_mu=False)
-eqn.plot_slice(t, steady=False)
+eqn = CircleBackward2D(p0=p0, sigma=sigma, t1=.5, low=low, high=high, folder='.', name=name, dtype='float64')
+t = 50.0
+s, values = eqn.evol(X0='grid_30', n_repeats=100, final_time=t, time_steps=10000, prune=None, interpolate=True, invert_mu=False)
+eqn.plot_slice(t, steady=True)

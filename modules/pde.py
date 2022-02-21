@@ -137,7 +137,7 @@ class SemilinearPDE:
     def get_time_slice(self, t):
         if isinstance(t, int):
             spacetime, values = self.read_data()
-            a = self.n_particles * slice
+            a = self.n_particles * t
             b = a + self.n_particles
             return spacetime[a:b, :], values[a:b]
         else:
@@ -231,7 +231,7 @@ class SemilinearPDE:
 
     def time_tag(self, t):
         if isinstance(t, int):
-            return '_slice_' + str(slice)
+            return '_slice_' + str(t)
         else:
             return '_time_{:.6f}'.format(t).replace('.', '_')
 
